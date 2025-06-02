@@ -12,15 +12,15 @@ use Psr\SimpleCache\CacheInterface;
 class CacheBridge implements CacheInterface
 {
     /**
-     * @param $key
-     * @param  null  $default
+     * @param string $key
+     * @param mixed $default
      * @return mixed
      */
-    public function get($key, $default = null) // Mixed not php 7.4 safe
+    public function get(string $key, mixed $default = null): mixed
     {
         return Cache::get($key, $default);
     }
-
+	
     /**
      * @param $key
      * @param $value
