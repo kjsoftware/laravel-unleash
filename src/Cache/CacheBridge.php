@@ -12,15 +12,17 @@ use Psr\SimpleCache\CacheInterface;
 class CacheBridge implements CacheInterface
 {
     /**
-     * @param $key
-     * @param  null  $default
-     * @return mixed
+     * Retrieves a value from the cache by key, returning a default value if the key does not exist.
+     *
+     * @param string $key The cache key to retrieve.
+     * @param mixed $default The value to return if the key is not found.
+     * @return mixed The cached value or the default if the key does not exist.
      */
-    public function get($key, $default = null) // Mixed not php 7.4 safe
+    public function get(string $key, mixed $default = null): mixed
     {
         return Cache::get($key, $default);
     }
-
+	
     /**
      * @param $key
      * @param $value
