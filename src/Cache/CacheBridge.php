@@ -12,9 +12,11 @@ use Psr\SimpleCache\CacheInterface;
 class CacheBridge implements CacheInterface
 {
     /**
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
+     * Retrieves a value from the cache by key, returning a default value if the key does not exist.
+     *
+     * @param string $key The cache key to retrieve.
+     * @param mixed $default The value to return if the key is not found.
+     * @return mixed The cached value or the default if the key does not exist.
      */
     public function get(string $key, mixed $default = null): mixed
     {
