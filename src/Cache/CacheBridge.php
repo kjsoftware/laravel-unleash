@@ -12,35 +12,35 @@ use Psr\SimpleCache\CacheInterface;
 class CacheBridge implements CacheInterface
 {
     /**
-     * @param $key
-     * @param  null  $default
+     * @param string $key
+     * @param mixed $default
      * @return mixed
      */
-    public function get($key, $default = null) // Mixed not php 7.4 safe
+    public function get(string $key, mixed $default = null): mixed
     {
-        return Cache::memo()->get($key, $default);
+        return Cache::get($key, $default);
     }
 
     /**
-     * @param $key
-     * @param $value
-     * @param  null  $ttl
+     * @param string $key
+     * @param mixed $value
+     * @param null|int|\DateInterval $ttl
      * @return bool
      */
-    public function set($key, $value, $ttl = null): bool
+    public function set(string $key, mixed $value, null|int|\DateInterval $ttl = null): bool
     {
-        Cache::memo()->put($key, $value, $ttl);
+        Cache::put($key, $value, $ttl);
 
         return true;
     }
 
     /**
-     * @param $key
+     * @param string $key
      * @return bool
      */
-    public function delete($key): bool
+    public function delete(string $key): bool
     {
-        return Cache::memo()->forget($key);
+        return Cache::forget($key);
     }
 
     /**
@@ -48,47 +48,50 @@ class CacheBridge implements CacheInterface
      */
     public function clear(): bool
     {
-        return Cache::memo()->flush();
+        return Cache::flush();
     }
 
     /**
-     * @param array $keys
-     * @param  null  $default
-     * @return array
+     * @param iterable $keys
+     * @param mixed $default
+     * @return iterable
      */
-    public function getMultiple($keys, $default = null): array
+    public function getMultiple(iterable $keys, mixed $default = null): iterable
     {
-        return Cache::memo()->many($keys);
+        return Cache::many($keys);
     }
 
     /**
-     * @param array $values
-     * @param  null  $ttl
+     * @param iterable $values
+     * @param null|int|\DateInterval $ttl
      * @return bool
      */
-    public function setMultiple($values, $ttl = null): bool
+    public function setMultiple(iterable $values, null|int|\DateInterval $ttl = null): bool
     {
-        Cache::memo()->putMany($values, $ttl);
+        Cache::putMany($values, $ttl);
 
         return true;
     }
 
     /**
-     * @param array $keys
+     * @param iterable $keys
+     * @return bool
      */
-    public function deleteMultiple($keys): bool
+    public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
             $this->delete($key);
         }
+        
+        return true;
     }
 
     /**
-     * @param $key
+     * @param string $key
      * @return bool
      */
-    public function has($key): bool
+    public function has(string $key): bool
     {
-        return Cache::memo()->has($key);
+        return Cache::has($key);
     }
 }
