@@ -4,6 +4,7 @@ namespace JWebb\Unleash\Cache;
 
 use Illuminate\Support\Facades\Cache;
 use Psr\SimpleCache\CacheInterface;
+use Unleash\Client\Enum\CacheKey;
 
 /**
  * Thanks to leo108 for the `SimpleCacheBridge.php` gist
@@ -11,14 +12,50 @@ use Psr\SimpleCache\CacheInterface;
  */
 class CacheBridge implements CacheInterface
 {
-    /**
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
     public function get(string $key, mixed $default = null): mixed
     {
-        return Cache::memo()->get($key, $default);
+        $value = Cache::memo()->get($key, $default);
+
+        if ($key !== CacheKey::FEATURES || $value === $default) {
+            return $value;
+        }
+
+        if (! $this->containsIncompleteClass($value)) {
+            return $value;
+        }
+
+        $this->delete($key);
+
+        return $default;
+    }
+
+    private function containsIncompleteClass(mixed $value): bool
+    {
+        if ($value instanceof \__PHP_Incomplete_Class) {
+            return true;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->containsIncompleteClass($item)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! is_object($value)) {
+            return false;
+        }
+
+        foreach ((array) $value as $propertyValue) {
+            if ($this->containsIncompleteClass($propertyValue)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
