@@ -35,8 +35,8 @@ class CacheBridge implements CacheInterface
             return $value;
         }
 
-        $this->reportIncompleteClasses($key, array_keys($incompleteClasses));
         $this->delete($key);
+        $this->reportIncompleteClasses($key, array_keys($incompleteClasses));
 
         return $default;
     }
