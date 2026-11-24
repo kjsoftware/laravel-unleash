@@ -3,6 +3,7 @@
 namespace JWebb\Unleash\Cache;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Psr\SimpleCache\CacheInterface;
 use Unleash\Client\Enum\CacheKey;
 
@@ -12,6 +13,13 @@ use Unleash\Client\Enum\CacheKey;
  */
 class CacheBridge implements CacheInterface
 {
+    /**
+     * Incomplete class names already reported by this process, to avoid flooding the log on every flag check.
+     *
+     * @var array<string, true>
+     */
+    private static array $reportedIncompleteClasses = [];
+
     public function get(string $key, mixed $default = null): mixed
     {
         $value = Cache::memo()->get($key, $default);
@@ -20,42 +28,56 @@ class CacheBridge implements CacheInterface
             return $value;
         }
 
-        if (! $this->containsIncompleteClass($value)) {
+        $incompleteClasses = [];
+        $this->collectIncompleteClasses($value, $incompleteClasses);
+
+        if ($incompleteClasses === []) {
             return $value;
         }
 
+        $this->reportIncompleteClasses($key, array_keys($incompleteClasses));
         $this->delete($key);
 
         return $default;
     }
 
-    private function containsIncompleteClass(mixed $value): bool
+    /**
+     * @param array<string, true> $classes
+     */
+    private function collectIncompleteClasses(mixed $value, array &$classes): void
     {
         if ($value instanceof \__PHP_Incomplete_Class) {
-            return true;
+            $className = ((array) $value)['__PHP_Incomplete_Class_Name'] ?? 'unknown';
+            $classes[is_string($className) ? $className : 'unknown'] = true;
         }
 
-        if (is_array($value)) {
-            foreach ($value as $item) {
-                if ($this->containsIncompleteClass($item)) {
-                    return true;
-                }
-            }
-
-            return false;
+        if (! is_array($value) && ! is_object($value)) {
+            return;
         }
 
-        if (! is_object($value)) {
-            return false;
+        foreach ((array) $value as $item) {
+            $this->collectIncompleteClasses($item, $classes);
+        }
+    }
+
+    /**
+     * @param list<string> $classes
+     */
+    private function reportIncompleteClasses(string $key, array $classes): void
+    {
+        sort($classes);
+        $fingerprint = implode(',', $classes);
+
+        if (isset(self::$reportedIncompleteClasses[$fingerprint])) {
+            return;
         }
 
-        foreach ((array) $value as $propertyValue) {
-            if ($this->containsIncompleteClass($propertyValue)) {
-                return true;
-            }
-        }
+        self::$reportedIncompleteClasses[$fingerprint] = true;
 
-        return false;
+        Log::warning('Unleash feature cache contains incomplete classes; the cache entry is discarded and features are fetched again. Add these classes to cache.serializable_classes.', [
+            'cache_key' => $key,
+            'classes' => $classes,
+        ]);
     }
 
     /**
